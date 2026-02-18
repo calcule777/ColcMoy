@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moyenne Semestrielle — 2ème Année Prépa</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --card: #1a1a26;
+    --border: #2a2a3f;
+    --accent: #6c63ff;
+    --accent2: #ff6b9d;
+    --accent3: #00d4aa;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --coef3: #ff6b9d;
+    --coef2: #6c63ff;
+    --coef1: #00d4aa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 60px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .module-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .module-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+  }
+
+  .module-card.coef3 { border-left: 3px solid var(--coef3); }
+  .module-card.coef2 { border-left: 3px solid var(--coef2); }
+  .module-card.coef1 { border-left: 3px solid var(--coef1); }
+
+  .module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .module-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .coef-badge {
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
+  .coef3 .coef-badge { background: rgba(255,107,157,0.15); color: var(--coef3); }
+  .coef2 .coef-badge { background: rgba(108,99,255,0.15); color: var(--coef2); }
+  .coef1 .coef-badge { background: rgba(0,212,170,0.15); color: var(--coef1); }
+
+  .inputs { display: flex; flex-direction: column; gap: 10px; }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .input-label {
+    font-size: 11px;
+    color: var(--muted);
+    width: 70px;
+    flex-shrink: 0;
+  }
+
+  .pct {
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  input[type="number"] {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="number"].exam-only {
+    border-color: rgba(0,212,170,0.3);
+  }
+
+  .module-avg {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .avg-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text);
+  }
+
+  .avg-value.filled { color: var(--accent); }
+
+  /* Result section */
+  .result-section {
+    background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(255,107,157,0.05));
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .result-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .result-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 72px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .result-mention {
+    font-size: 14px;
+    padding: 6px 20px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 24px;
+  }
+
+  .mention-fail { background: rgba(255,80,80,0.15); color: #ff5050; }
+  .mention-pass { background: rgba(0,212,170,0.15); color: var(--coef1); }
+  .mention-ab { background: rgba(108,99,255,0.15); color: var(--coef2); }
+  .mention-bien { background: rgba(255,107,157,0.15); color: var(--accent2); }
+  .mention-tb { background: rgba(255,200,0,0.15); color: #ffd700; }
+
+  .breakdown {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .breakdown span strong {
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+  }
+
+  .reset-btn {
+    margin-top: 24px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .no-data { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="badge">Calculateur de notes</div>
+    <h1>Moyenne Semestrielle<br>2ème Année Prépa</h1>
+    <p class="subtitle">9 modules · Coefficients pondérés · TD + Examen</p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="dot" style="background:var(--coef3)"></span> Coefficient 3</div>
+    <div class="legend-item"><span class="dot" style="background:var(--coef2)"></span> Coefficient 2</div>
+    <div class="legend-item"><span class="dot" style="background:var(--coef1)"></span> Coefficient 1</div>
+  </div>
+
+  <div class="modules-grid" id="modulesGrid"></div>
+
+  <div class="result-section">
+    <div class="result-label">Moyenne Semestrielle</div>
+    <div class="result-value" id="resultValue">—</div>
+    <div id="resultMention" class="result-mention" style="display:none"></div>
+    <div class="breakdown" id="breakdown"></div>
+    <br>
+    <button class="reset-btn" onclick="resetAll()">↺ Réinitialiser</button>
+  </div>
+</div>
+
+<script>
+const modules = [
+  // Coefficient 3
+  { id: 1, name: "Analyse Mathématique", coef: 3, hasTD: true },
+  { id: 2, name: "Algèbre Linéaire", coef: 3, hasTD: true },
+  { id: 3, name: "Probabilités", coef: 3, hasTD: true },
+  // Coefficient 2
+  { id: 4, name: "Micro-Économie", coef: 2, hasTD: true },
+  { id: 5, name: "Comptabilité", coef: 2, hasTD: true },
+  { id: 6, name: "Informatique", coef: 2, hasTD: true },
+  // Coefficient 1
+  { id: 7, name: "Français", coef: 1, hasTD: true },
+  { id: 8, name: "Anglais", coef: 1, hasTD: true },
+  { id: 9, name: "Histoire & Géographie", coef: 1, hasTD: false }, // Examen seulement
+];
+
+function buildUI() {
+  const grid = document.getElementById('modulesGrid');
+  modules.forEach((mod, i) => {
+    const delay = i * 0.07;
+    const card = document.createElement('div');
+    card.className = `module-card coef${mod.coef}`;
+    card.style.animationDelay = delay + 's';
+
+    card.innerHTML = `
+      <div class="module-header">
+        <div class="module-name">${mod.name}</div>
+        <span class="coef-badge">COEF ${mod.coef}</span>
+      </div>
+      <div class="inputs">
+        ${mod.hasTD ? `
+        <div class="input-row">
+          <span class="input-label">TD</span>
+          <input type="number" min="0" max="20" step="0.01" placeholder="/ 20"
+            id="td_${mod.id}" oninput="calculate()" class="">
+          <span class="pct">40%</span>
+        </div>
+        <div class="input-row">
+          <span class="input-label">Examen</span>
+          <input type="number" min="0" max="20" step="0.01" placeholder="/ 20"
+            id="ex_${mod.id}" oninput="calculate()">
+          <span class="pct">60%</span>
+        </div>
+        ` : `
+        <div class="input-row">
+          <span class="input-label">Examen</span>
+          <input type="number" min="0" max="20" step="0.01" placeholder="/ 20"
+            id="ex_${mod.id}" oninput="calculate()" class="exam-only">
+          <span class="pct">100%</span>
+        </div>
+        `}
+      </div>
+      <div class="module-avg">
+        <span>Moyenne module</span>
+        <span class="avg-value" id="avg_${mod.id}">—</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function getModuleAvg(mod) {
+  const ex = parseFloat(document.getElementById('ex_' + mod.id)?.value);
+  if (mod.hasTD) {
+    const td = parseFloat(document.getElementById('td_' + mod.id)?.value);
+    if (isNaN(td) && isNaN(ex)) return null;
+    const tdVal = isNaN(td) ? 0 : td;
+    const exVal = isNaN(ex) ? 0 : ex;
+    return tdVal * 0.4 + exVal * 0.6;
+  } else {
+    if (isNaN(ex)) return null;
+    return ex;
+  }
+}
+
+function getMention(avg) {
+  if (avg < 10) return { text: 'Insuffisant', cls: 'mention-fail' };
+  if (avg < 12) return { text: 'Passable', cls: 'mention-pass' };
+  if (avg < 14) return { text: 'Assez Bien', cls: 'mention-ab' };
+  if (avg < 16) return { text: 'Bien', cls: 'mention-bien' };
+  return { text: 'Très Bien', cls: 'mention-tb' };
+}
+
+function calculate() {
+  let totalWeighted = 0, totalCoef = 0;
+  let filledCount = 0;
+
+  modules.forEach(mod => {
+    const avg = getModuleAvg(mod);
+    const el = document.getElementById('avg_' + mod.id);
+    if (avg !== null) {
+      el.textContent = avg.toFixed(2);
+      el.className = 'avg-value filled';
+      totalWeighted += avg * mod.coef;
+      totalCoef += mod.coef;
+      filledCount++;
+    } else {
+      el.textContent = '—';
+      el.className = 'avg-value';
+    }
+  });
+
+  const resultEl = document.getElementById('resultValue');
+  const mentionEl = document.getElementById('resultMention');
+  const breakdownEl = document.getElementById('breakdown');
+
+  if (filledCount === 0) {
+    resultEl.textContent = '—';
+    mentionEl.style.display = 'none';
+    breakdownEl.innerHTML = '<span class="no-data">Entrez vos notes pour calculer la moyenne</span>';
+    return;
+  }
+
+  const finalAvg = totalWeighted / totalCoef;
+  resultEl.textContent = finalAvg.toFixed(2);
+
+  const admitted = finalAvg >= 10;
+  mentionEl.textContent = admitted ? '✓ ADMIS(E)' : '✗ AJOURNÉ(E)';
+  mentionEl.className = 'result-mention ' + (admitted ? 'mention-pass' : 'mention-fail');
+  mentionEl.style.display = 'inline-block';
+
+  breakdownEl.innerHTML = `
+    <span>Modules renseignés : <strong>${filledCount}/9</strong></span>
+    <span>Coefs cumulés : <strong>${totalCoef}/18</strong></span>
+    <span>Points pondérés : <strong>${totalWeighted.toFixed(2)}</strong></span>
+  `;
+}
+
+function resetAll() {
+  modules.forEach(mod => {
+    const ex = document.getElementById('ex_' + mod.id);
+    if (ex) ex.value = '';
+    const td = document.getElementById('td_' + mod.id);
+    if (td) td.value = '';
+    const avg = document.getElementById('avg_' + mod.id);
+    if (avg) { avg.textContent = '—'; avg.className = 'avg-value'; }
+  });
+  document.getElementById('resultValue').textContent = '—';
+  document.getElementById('resultMention').style.display = 'none';
+  document.getElementById('breakdown').innerHTML = '<span class="no-data">Entrez vos notes pour calculer la moyenne</span>';
+}
+
+buildUI();
+calculate();
+</script>
+</body>
+</html>
