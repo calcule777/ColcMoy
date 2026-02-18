@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moyenne Semestrielle — 2ème Année Prépa</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root[data-theme="dark"] {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --card: #1a1a26;
+  --border: #2a2a3f;
+  --accent: #6c63ff;
+  --accent2: #ff6b9d;
+  --accent3: #00d4aa;
+  --text: #e8e8f0;
+  --muted: #7070a0;
+  --coef3: #ff6b9d;
+  --coef2: #6c63ff;
+  --coef1: #00d4aa;
+  --shadow: rgba(0,0,0,0.5);
+  --grid: rgba(108,99,255,0.04);
+}
+:root[data-theme="light"] {
+  --bg: #f4f4fc;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: #d8d8ee;
+  --accent: #5a52e0;
+  --accent2: #e0527a;
+  --accent3: #00a88a;
+  --text: #1a1a2e;
+  --muted: #6868a0;
+  --coef3: #e0527a;
+  --coef2: #5a52e0;
+  --coef1: #00a88a;
+  --shadow: rgba(0,0,0,0.08);
+  --grid: rgba(90,82,224,0.05);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  padding: 30px 20px 80px;
+  transition: background 0.35s, color 0.35s;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#confetti-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 999;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* TOP BAR */
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.icon-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+
+/* HEADER */
+header { text-align: center; margin-bottom: 44px; animation: fadeDown 0.6s ease both; }
+.badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 20px;
+  margin-bottom: 18px;
+}
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(26px, 5vw, 50px);
+  font-weight: 800;
+  line-height: 1.1;
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 55%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+.subtitle { color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+
+/* LEGEND */
+.legend {
+  display: flex; gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ALERT BANNER */
+#alertBanner {
+  display: none;
+  background: rgba(255,80,80,0.1);
+  border: 1px solid rgba(255,80,80,0.35);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #ff5050;
+  animation: shake 0.4s ease;
+}
+#alertBanner strong { display: block; margin-bottom: 4px; font-size: 13px; }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+}
+
+/* MODULES GRID */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.module-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  animation: fadeUp 0.5s ease both;
+  box-shadow: 0 4px 20px var(--shadow);
+}
+.module-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.module-card.coef3 { border-left: 3px solid var(--coef3); }
+.module-card.coef2 { border-left: 3px solid var(--coef2); }
+.module-card.coef1 { border-left: 3px solid var(--coef1); }
+.module-card.has-elim { border-color: rgba(255,80,80,0.6) !important; box-shadow: 0 0 0 2px rgba(255,80,80,0.12), 0 4px 20px var(--shadow); }
+
+.module-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.module-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; color: var(--text); line-height: 1.3; }
+.coef-badge { font-size: 10px; letter-spacing: 1px; padding: 3px 8px; border-radius: 10px; flex-shrink: 0; margin-left: 8px; }
+.coef3 .coef-badge { background: rgba(255,107,157,0.15); color: var(--coef3); }
+.coef2 .coef-badge { background: rgba(108,99,255,0.15); color: var(--coef2); }
+.coef1 .coef-badge { background: rgba(0,212,170,0.15); color: var(--coef1); }
+
+.elim-tag {
+  display: none;
+  font-size: 10px; color: #ff5050;
+  background: rgba(255,80,80,0.1);
+  border: 1px solid rgba(255,80,80,0.3);
+  border-radius: 8px;
+  padding: 3px 10px;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+.module-card.has-elim .elim-tag { display: inline-block; }
+
+.inputs { display: flex; flex-direction: column; gap: 10px; }
+.input-row { display: flex; align-items: center; gap: 10px; }
+.input-label { font-size: 11px; color: var(--muted); width: 65px; flex-shrink: 0; }
+.pct { font-size: 11px; color: var(--muted); flex-shrink: 0; width: 36px; text-align: right; }
+
+input[type="number"] {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  min-width: 0;
+}
+input[type="number"]:focus { border-color: var(--accent); }
+input[type="number"].note-good { border-color: var(--coef1) !important; background: rgba(0,212,170,0.06); }
+input[type="number"].note-avg  { border-color: #ffd700 !important; background: rgba(255,215,0,0.06); }
+input[type="number"].note-bad  { border-color: #ff5050 !important; background: rgba(255,80,80,0.06); }
+
+/* Progress bar */
+.progress-wrap {
+  margin-top: 10px;
+  height: 5px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  border-radius: 5px;
+  width: 0%;
+  transition: width 0.5s cubic-bezier(.4,0,.2,1), background 0.3s;
+}
+
+.module-avg {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; color: var(--muted);
+}
+.avg-value { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 20px; color: var(--text); transition: color 0.3s; }
+.avg-value.good { color: var(--coef1); }
+.avg-value.mid  { color: #ffd700; }
+.avg-value.bad  { color: #ff5050; }
+
+/* RESULT */
+.result-section {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(255,107,157,0.04));
+  border: 1px solid rgba(108,99,255,0.25);
+  border-radius: 24px;
+  padding: 44px 30px;
+  text-align: center;
+  margin-bottom: 30px;
+  animation: fadeUp 0.6s 0.4s ease both;
+  box-shadow: 0 10px 50px var(--shadow);
+}
+.result-label { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.result-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 84px; font-weight: 800; line-height: 1;
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, var(--text), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.result-mention {
+  font-size: 14px; padding: 9px 30px; border-radius: 24px;
+  display: inline-block; margin-bottom: 24px;
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 3px;
+}
+.mention-fail { background: rgba(255,80,80,0.12); color: #ff5050; border: 1px solid rgba(255,80,80,0.3); }
+.mention-pass { background: rgba(0,212,170,0.12); color: var(--coef1); border: 1px solid rgba(0,212,170,0.3); }
+
+.breakdown {
+  display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+  font-size: 11px; color: var(--muted); margin-bottom: 28px; line-height: 1.8;
+}
+.breakdown span strong { color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px; display: block; }
+
+.action-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.action-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  padding: 11px 22px; border-radius: 12px;
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.action-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.action-btn.pdf:hover { border-color: var(--accent2); color: var(--accent2); }
+
+.no-data { color: var(--muted); font-size: 13px; }
+
+/* SAVE INDICATOR */
+.save-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--coef1);
+  display: inline-block;
+  animation: pulse 1.5s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+/* ANIMATIONS */
+@keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 500px) {
+  .result-value { font-size: 58px; }
+  .result-section { padding: 28px 16px; }
+  .topbar { justify-content: center; }
+}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+
+<div class="container">
+
+  <div class="topbar">
+    <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+      <span class="save-dot" id="saveDot" style="display:none"></span>
+      <span id="saveLabel"></span>
+    </span>
+    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙 Mode Clair</button>
+    <button class="icon-btn" onclick="exportPDF()">📄 Exporter PDF</button>
+  </div>
+
+  <header>
+    <div class="badge">Calculateur de notes</div>
+    <h1>Moyenne Semestrielle<br>2ème Année Prépa</h1>
+    <p class="subtitle">9 modules · Coefficients pondérés · TD + Examen</p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="dot" style="background:var(--coef3)"></span>Coef 3 — Analyse, Algèbre, Probabilités</div>
+    <div class="legend-item"><span class="dot" style="background:var(--coef2)"></span>Coef 2 — Micro-Éco, Comptabilité, Info</div>
+    <div class="legend-item"><span class="dot" style="background:var(--coef1)"></span>Coef 1 — Français, Anglais, Hist-Géo</div>
+  </div>
+
+  <div id="alertBanner">
+    <strong>⚠ Note éliminatoire détectée !</strong>
+    <span id="alertText"></span>
+  </div>
+
+  <div class="modules-grid" id="modulesGrid"></div>
+
+  <div class="result-section">
+    <div class="result-label">Moyenne Semestrielle Générale</div>
+    <div class="result-value" id="resultValue">—</div>
+    <div id="resultMention" class="result-mention" style="display:none"></div>
+    <div class="breakdown" id="breakdown">
+      <span class="no-data">Entrez vos notes pour calculer la moyenne</span>
+    </div>
+    <div class="action-row">
+      <button class="action-btn" onclick="resetAll()">↺ Réinitialiser</button>
+      <button class="action-btn pdf" onclick="exportPDF()">⬇ Télécharger PDF</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── MODULES DATA ─────────────────────────────────────────────────────────
+const modules = [
+  { id:1, name:"Analyse Mathématique",  coef:3, hasTD:true  },
+  { id:2, name:"Algèbre Linéaire",      coef:3, hasTD:true  },
+  { id:3, name:"Probabilités",          coef:3, hasTD:true  },
+  { id:4, name:"Micro-Économie",        coef:2, hasTD:true  },
+  { id:5, name:"Comptabilité",          coef:2, hasTD:true  },
+  { id:6, name:"Informatique",          coef:2, hasTD:true  },
+  { id:7, name:"Français",             coef:1, hasTD:true  },
+  { id:8, name:"Anglais",             coef:1, hasTD:true  },
+  { id:9, name:"Histoire & Géographie",coef:1, hasTD:false },
+];
+
+// ── BUILD UI ─────────────────────────────────────────────────────────────
+function buildUI() {
+  const grid = document.getElementById('modulesGrid');
+  modules.forEach((mod, i) => {
+    const card = document.createElement('div');
+    card.className = `module-card coef${mod.coef}`;
+    card.id = `card_${mod.id}`;
+    card.style.animationDelay = (i * 0.07) + 's';
+    card.innerHTML = `
+      <div class="module-header">
+        <div class="module-name">${mod.name}</div>
+        <span class="coef-badge">COEF ${mod.coef}</span>
+      </div>
+      <div class="elim-tag">⚠ NOTE &lt; 5 — ÉLIMINATOIRE</div>
+      <div class="inputs">
+        ${mod.hasTD ? `
+        <div class="input-row">
+          <span class="input-label">TD</span>
+          <input type="number" min="0" max="20" step="0.25" placeholder="/ 20" id="td_${mod.id}" oninput="onInput(this)">
+          <span class="pct">40%</span>
+        </div>
+        <div class="input-row">
+          <span class="input-label">Examen</span>
+          <input type="number" min="0" max="20" step="0.25" placeholder="/ 20" id="ex_${mod.id}" oninput="onInput(this)">
+          <span class="pct">60%</span>
+        </div>` : `
+        <div class="input-row">
+          <span class="input-label">Examen</span>
+          <input type="number" min="0" max="20" step="0.25" placeholder="/ 20" id="ex_${mod.id}" oninput="onInput(this)">
+          <span class="pct">100%</span>
+        </div>`}
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="pb_${mod.id}"></div></div>
+      <div class="module-avg">
+        <span>Moyenne module</span>
+        <span class="avg-value" id="avg_${mod.id}">—</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── INPUT ────────────────────────────────────────────────────────────────
+function onInput(el) {
+  const val = parseFloat(el.value);
+  el.classList.remove('note-good','note-avg','note-bad');
+  if (!isNaN(val)) {
+    if (val >= 12) el.classList.add('note-good');
+    else if (val >= 7) el.classList.add('note-avg');
+    else el.classList.add('note-bad');
+  }
+  calculate();
+  saveData();
+}
+
+// ── GET MODULE AVERAGE ───────────────────────────────────────────────────
+function getModuleAvg(mod) {
+  const ex = parseFloat(document.getElementById('ex_' + mod.id)?.value);
+  if (mod.hasTD) {
+    const td = parseFloat(document.getElementById('td_' + mod.id)?.value);
+    if (isNaN(td) && isNaN(ex)) return null;
+    return (isNaN(td) ? 0 : td) * 0.4 + (isNaN(ex) ? 0 : ex) * 0.6;
+  }
+  return isNaN(ex) ? null : ex;
+}
+
+// ── CALCULATE ────────────────────────────────────────────────────────────
+let prevAvg = null, confettiDone = false;
+
+function calculate() {
+  let totalW = 0, totalC = 0, filled = 0;
+  const elimList = [];
+
+  modules.forEach(mod => {
+    const avg  = getModuleAvg(mod);
+    const avgEl = document.getElementById('avg_' + mod.id);
+    const pb    = document.getElementById('pb_' + mod.id);
+    const card  = document.getElementById('card_' + mod.id);
+
+    // Check eliminatoire
+    const ex = parseFloat(document.getElementById('ex_' + mod.id)?.value);
+    const td = mod.hasTD ? parseFloat(document.getElementById('td_' + mod.id)?.value) : NaN;
+    const isElim = (!isNaN(ex) && ex < 5) || (!isNaN(td) && td < 5);
+    card.classList.toggle('has-elim', isElim);
+    if (isElim) elimList.push(mod.name);
+
+    if (avg !== null) {
+      avgEl.textContent = avg.toFixed(2);
+      avgEl.className = 'avg-value ' + (avg >= 12 ? 'good' : avg >= 7 ? 'mid' : 'bad');
+      const pct = Math.min(100, (avg / 20) * 100);
+      pb.style.width = pct + '%';
+      pb.style.background = avg >= 12
+        ? 'linear-gradient(90deg,#00d4aa,#00ffcc)'
+        : avg >= 7
+        ? 'linear-gradient(90deg,#ffd700,#ffaa00)'
+        : 'linear-gradient(90deg,#ff5050,#ff8080)';
+      totalW += avg * mod.coef;
+      totalC += mod.coef;
+      filled++;
+    } else {
+      avgEl.textContent = '—';
+      avgEl.className = 'avg-value';
+      pb.style.width = '0%';
+    }
+  });
+
+  // Alert
+  const banner = document.getElementById('alertBanner');
+  if (elimList.length) {
+    banner.style.display = 'block';
+    document.getElementById('alertText').textContent =
+      'Note < 5 dans : ' + elimList.join(', ') + '. Vérifiez les règles de votre établissement.';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  const resultEl   = document.getElementById('resultValue');
+  const mentionEl  = document.getElementById('resultMention');
+  const breakEl    = document.getElementById('breakdown');
+
+  if (filled === 0) {
+    resultEl.textContent = '—';
+    mentionEl.style.display = 'none';
+    breakEl.innerHTML = '<span class="no-data">Entrez vos notes pour calculer la moyenne</span>';
+    prevAvg = null; confettiDone = false; return;
+  }
+
+  const finalAvg = totalW / totalC;
+  animateCounter(resultEl, prevAvg ?? finalAvg, finalAvg);
+  prevAvg = finalAvg;
+
+  const admitted = finalAvg >= 10;
+  mentionEl.textContent = admitted ? '✓  ADMIS(E)' : '✗  AJOURNÉ(E)';
+  mentionEl.className   = 'result-mention ' + (admitted ? 'mention-pass' : 'mention-fail');
+  mentionEl.style.display = 'inline-block';
+
+  breakEl.innerHTML = `
+    <span>Modules renseignés<strong>${filled} / 9</strong></span>
+    <span>Coefs cumulés<strong>${totalC} / 18</strong></span>
+    <span>Points pondérés<strong>${totalW.toFixed(2)}</strong></span>
+  `;
+
+  if (admitted && filled === 9 && !confettiDone) { confettiDone = true; launchConfetti(); }
+  if (!admitted || filled < 9) confettiDone = false;
+}
+
+// ── COUNTER ANIMATION ────────────────────────────────────────────────────
+function animateCounter(el, from, to) {
+  const dur = 500, s = performance.now();
+  (function step(now) {
+    const t = Math.min((now - s) / dur, 1);
+    const e = 1 - Math.pow(1 - t, 3);
+    el.textContent = (from + (to - from) * e).toFixed(2);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = to.toFixed(2);
+  })(s);
+}
+
+// ── RESET ────────────────────────────────────────────────────────────────
+function resetAll() {
+  if (!confirm('Réinitialiser toutes les notes ?')) return;
+  modules.forEach(mod => {
+    ['ex_','td_'].forEach(p => {
+      const el = document.getElementById(p + mod.id);
+      if (el) { el.value = ''; el.classList.remove('note-good','note-avg','note-bad'); }
+    });
+    const pb = document.getElementById('pb_' + mod.id);
+    if (pb) pb.style.width = '0%';
+    const avg = document.getElementById('avg_' + mod.id);
+    if (avg) { avg.textContent = '—'; avg.className = 'avg-value'; }
+    document.getElementById('card_' + mod.id).classList.remove('has-elim');
+  });
+  document.getElementById('resultValue').textContent = '—';
+  document.getElementById('resultMention').style.display = 'none';
+  document.getElementById('breakdown').innerHTML = '<span class="no-data">Entrez vos notes pour calculer la moyenne</span>';
+  document.getElementById('alertBanner').style.display = 'none';
+  prevAvg = null; confettiDone = false;
+  try { localStorage.removeItem('prepa_notes'); } catch(e) {}
+  showSaveStatus('Notes effacées');
+}
+
+// ── THEME ────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const dark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = dark ? '🌙 Mode Sombre' : '🌙 Mode Clair';
+  try { localStorage.setItem('prepa_theme', dark ? 'light' : 'dark'); } catch(e) {}
+}
+
+function loadTheme() {
+  try {
+    const t = localStorage.getItem('prepa_theme');
+    if (t) {
+      document.documentElement.setAttribute('data-theme', t);
+      document.getElementById('themeBtn').textContent = t === 'light' ? '🌙 Mode Sombre' : '🌙 Mode Clair';
+    }
+  } catch(e) {}
+}
+
+// ── LOCAL STORAGE ────────────────────────────────────────────────────────
+function saveData() {
+  try {
+    const data = {};
+    modules.forEach(mod => {
+      data[mod.id] = {
+        ex: document.getElementById('ex_' + mod.id)?.value || '',
+        td: document.getElementById('td_' + mod.id)?.value || ''
+      };
+    });
+    localStorage.setItem('prepa_notes', JSON.stringify(data));
+    showSaveStatus('Sauvegardé automatiquement');
+  } catch(e) {}
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('prepa_notes');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    modules.forEach(mod => {
+      const d = data[mod.id];
+      if (!d) return;
+      const exEl = document.getElementById('ex_' + mod.id);
+      const tdEl = document.getElementById('td_' + mod.id);
+      if (exEl && d.ex !== '') { exEl.value = d.ex; onInput(exEl); }
+      if (tdEl && d.td !== '') { tdEl.value = d.td; onInput(tdEl); }
+    });
+  } catch(e) {}
+}
+
+let saveTimer;
+function showSaveStatus(msg) {
+  const dot = document.getElementById('saveDot');
+  const lbl = document.getElementById('saveLabel');
+  dot.style.display = 'inline-block';
+  lbl.textContent = msg;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { dot.style.display = 'none'; lbl.textContent = ''; }, 2500);
+}
+
+// ── PDF EXPORT ───────────────────────────────────────────────────────────
+function exportPDF() {
+  if (!window.jspdf) { alert('Chargement du module PDF en cours, réessayez.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = 210, M = 18;
+  let y = 0;
+
+  // Header bar
+  doc.setFillColor(108, 99, 255);
+  doc.rect(0, 0, W, 38, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.text('Bulletin Semestriel — 2ème Année Prépa', M, 16);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}), M, 30);
+  y = 52;
+
+  // Table header
+  const cols = [M, 92, 122, 152, 174];
+  doc.setFillColor(235,235,255);
+  doc.rect(M, y-6, W-M*2, 9, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(60,60,120);
+  ['Module','TD (/20)','Examen (/20)','Coef','Moy.'].forEach((h,i) => doc.text(h, cols[i], y));
+  y += 5;
+  doc.setDrawColor(200,200,235);
+  doc.setLineWidth(0.3);
+  doc.line(M, y, W-M, y);
+  y += 5;
+
+  doc.setFont('helvetica','normal');
+  modules.forEach((mod, i) => {
+    if (i % 2 === 0) { doc.setFillColor(248,248,255); doc.rect(M, y-4, W-M*2, 9, 'F'); }
+    const td  = document.getElementById('td_'+mod.id)?.value || '—';
+    const ex  = document.getElementById('ex_'+mod.id)?.value || '—';
+    const avg = getModuleAvg(mod);
+
+    doc.setTextColor(30,30,60);
+    doc.setFontSize(8);
+    doc.text(mod.name, cols[0], y);
+    doc.text(mod.hasTD ? td : '—', cols[1], y);
+    doc.text(ex, cols[2], y);
+    doc.text(String(mod.coef), cols[3], y);
+
+    if (avg !== null) {
+      if (avg >= 12) doc.setTextColor(0,160,130);
+      else if (avg >= 10) doc.setTextColor(160,120,0);
+      else doc.setTextColor(200,50,50);
+      doc.text(avg.toFixed(2), cols[4], y);
+      doc.setTextColor(30,30,60);
+    } else {
+      doc.text('—', cols[4], y);
+    }
+    y += 9;
+  });
+
+  // Separator
+  y += 3;
+  doc.setDrawColor(108,99,255); doc.setLineWidth(0.5);
+  doc.line(M, y, W-M, y); y += 10;
+
+  // Result
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(108,99,255);
+  doc.text('Moyenne Générale Semestrielle :', M, y);
+  doc.setTextColor(30,30,60);
+  doc.text(prevAvg !== null ? prevAvg.toFixed(2) + ' / 20' : '—', 153, y);
+  y += 12;
+
+  if (prevAvg !== null) {
+    const admitted = prevAvg >= 10;
+    if (admitted) doc.setFillColor(0,180,140); else doc.setFillColor(220,60,60);
+    doc.roundedRect(M, y-7, 58, 11, 3, 3, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(10);
+    doc.text(admitted ? 'ADMIS(E)' : 'AJOURNE(E)', M+4, y);
+  }
+
+  y += 18;
+  doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(160,160,200);
+  doc.text('Document généré automatiquement par le Calculateur Moyenne Prépa', M, y);
+
+  doc.save('bulletin_semestre_prepa.pdf');
+}
+
+// ── CONFETTI ─────────────────────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const colors = ['#6c63ff','#ff6b9d','#00d4aa','#ffd700','#ff8800','#00cfff','#fff'];
+  const pieces = Array.from({length:180}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * -canvas.height * 0.5,
+    w: Math.random() * 14 + 5, h: Math.random() * 6 + 3,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    speed: Math.random() * 4 + 1.5,
+    angle: Math.random() * 360, spin: (Math.random()-0.5)*8,
+    drift: (Math.random()-0.5)*2,
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - frame/190);
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.w/2, p.h/2, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+      p.y += p.speed; p.x += p.drift; p.angle += p.spin;
+    });
+    frame++;
+    if (frame < 220) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+loadTheme();
+buildUI();
+loadData();
+calculate();
+</script>
+</body>
+</html>
